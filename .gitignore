@@ -1,22 +1,73 @@
-# Virtual environment
+# ─────────────────────────────────────────
+# Virtual Environment
+# ─────────────────────────────────────────
+venv/
 .venv/
+env/
 
-# Python cache
+# ─────────────────────────────────────────
+# Python Cache and Compiled Files
+# ─────────────────────────────────────────
 __pycache__/
-*.py[cod]
+*.pyc
 *.pyo
+*.pyd
+*.pycache
+.Python
 
-# Environment variables
+# ─────────────────────────────────────────
+# Environment Variables and Secrets
+# ─────────────────────────────────────────
 .env
+*.env
 
-# IDE settings
+# ─────────────────────────────────────────
+# Database Files
+# ─────────────────────────────────────────
+data/*.db
+data/*.sqlite
+data/*.sqlite3
+
+# ─────────────────────────────────────────
+# Logs
+# ─────────────────────────────────────────
+logs/
+*.log
+
+# ─────────────────────────────────────────
+# OS Generated Files
+# ─────────────────────────────────────────
+.DS_Store
+.DS_Store?
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ─────────────────────────────────────────
+# IDE and Editor Files
+# ─────────────────────────────────────────
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
 
-# Test/cache
+# ─────────────────────────────────────────
+# Testing and Coverage
+# ─────────────────────────────────────────
 .pytest_cache/
-.mypy_cache/
+.coverage
+htmlcov/
+coverage.xml
 
-# OS files
-.DS_Store
-Thumbs.db
+# ─────────────────────────────────────────
+# Docker
+# ─────────────────────────────────────────
+docker-compose.override.yml
+
+# ─────────────────────────────────────────
+# Distribution and Build
+# ─────────────────────────────────────────
+dist/
+build/
+*.egg-info/
