@@ -294,13 +294,27 @@ class ConstructionPMAgent:
                 dashboard_response = self.llm_sql.invoke(dashboard_prompt)
 
                 # Extract JSON from dashboard response
+                # More robust JSON extraction
                 json_match = re.search(
                     r'\{.*\}',
                     dashboard_response,
                     re.DOTALL
                 )
                 if json_match:
-                    dashboard_info = json.loads(json_match.group())
+                    raw_json = json_match.group()
+                    # Fix common LLM JSON mistakes
+                    # Replace single quotes with double quotes
+                    raw_json = raw_json.replace("'", '"')
+                    # Remove trailing commas before closing braces/brackets
+                    raw_json = re.sub(r',\s*}', '}', raw_json)
+                    raw_json = re.sub(r',\s*]', ']', raw_json)
+                    try:
+                        dashboard_info = json.loads(raw_json)
+                    except json.JSONDecodeError as json_err:
+                        logger.warning(
+                            f"Dashboard JSON parse failed after cleanup: {json_err}"
+                        )
+                        dashboard_info = None
 
             except Exception as e:
                 logger.warning(f"Dashboard mapping failed: {e}")

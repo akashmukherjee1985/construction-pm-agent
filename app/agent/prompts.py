@@ -121,6 +121,19 @@ as stock_deficit
      WHERE site_name = 'Beta Highway'
      AND quantity_in_stock < minimum_stock_level;
 
+Example 6:
+Question: Show me budget utilisation for all active sites.
+SQL: SELECT site_name,
+            total_budget,
+            spent_budget,
+            ROUND((spent_budget / total_budget) * 100, 1) as utilisation_pct
+     FROM sites
+     WHERE status = 'active'
+     ORDER BY utilisation_pct DESC;     
+
+
+
+
 NOW ANSWER THE REAL QUESTION:
 Question: {question}
 SQL:"""

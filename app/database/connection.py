@@ -229,19 +229,23 @@ def get_schema_context() -> str:
     # in SQLite, so we document relationships explicitly
     # This helps the LLM write correct JOIN queries
     relationships = """
-Table Relationships:
-  - workmen.site_name → sites.site_name
-  - equipment_inventory.site_name → sites.site_name
-  - materials.site_name → sites.site_name
-  - incidents.site_name → sites.site_name
+    Table Relationships:
+    - workmen.site_name → sites.site_name
+    - equipment_inventory.site_name → sites.site_name
+    - materials.site_name → sites.site_name
+    - incidents.site_name → sites.site_name
 
-Key Business Rules:
-  - All monetary values are in USD
-  - utilisation_percent ranges from 0.0 to 100.0
-  - attendance_status values: present, absent, on_leave
-  - Budget utilisation = (spent_budget / total_budget) * 100
-  - Low stock alert when quantity_in_stock < minimum_stock_level
-"""
+    Key Business Rules:
+    - All monetary values are in USD
+    - utilisation_percent ranges from 0.0 to 100.0
+    - attendance_status values: present, absent, on_leave
+    - Budget utilisation = (spent_budget / total_budget) * 100
+    - Low stock alert when quantity_in_stock < minimum_stock_level
+    - incidents.severity stores the level: low, medium, high, critical
+    - incidents.incident_type stores the category: 'Fall from height',
+        'Equipment failure', 'Near miss', etc.
+    - For safety scoring always use the severity column NOT incident_type
+    """
 
     # Join all parts with blank lines between tables
     full_schema = "\n".join(schema_parts) + "\n" + relationships
