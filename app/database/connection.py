@@ -142,3 +142,108 @@ def execute_raw_sql(query: str, params: dict = None) -> list[dict]:
         columns = result.keys()
         rows = result.fetchall()
         return [dict(zip(columns, row)) for row in rows]
+    
+
+
+def get_schema_context() -> str:
+    """
+    Introspect the live database and return a formatted schema string
+    that the LLM can read and understand.
+
+    This is the RAG knowledge base for SQL generation.
+    Instead of hardcoding table descriptions, we read the actual
+    schema from the database at runtime.
+
+    This means if the schema changes, the LLM automatically gets
+    the updated schema on the next call — no code changes needed.
+
+    Returns:
+        A formatted string describing all tables and their columns.
+        Example output:
+            Table: sites
+              - id (INTEGER) required
+              - site_name (VARCHAR) required
+              - status (VARCHAR) optional
+            ...
+
+    In production (PostgreSQL), replace the sqlite_master query with:
+        SELECT table_name, column_name, data_type, is_nullable
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+        ORDER BY table_name, ordinal_position;
+    """
+    # Step 1: Get all table names from SQLite's internal catalog
+    # sqlite_master is SQLite's system table that tracks all objects
+    tables_query = """
+        SELECT name 
+        FROM sqlite_master 
+        WHERE type = 'table'
+        AND name NOT LIKE 'sqlite_%'
+        ORDER BY name;
+    """
+    # AND name NOT LIKE 'sqlite_%' excludes SQLite's internal tables
+    # like sqlite_sequence which we don't want the LLM to see
+
+    tables = execute_raw_sql(tables_query)
+    # Returns: [{"name": "sites"}, {"name": "workmen"}, ...]
+
+    if not tables:
+        return "No tables found in database."
+
+    schema_parts = []
+    # We'll build the schema string piece by piece
+    # then join them at the end
+
+    # Step 2: For each table, get its column details
+    for table_row in tables:
+        table_name = table_row["name"]
+
+        # pragma_table_info() is SQLite's built-in function
+        # that returns column metadata for a given table
+        columns_query = f"PRAGMA table_info({table_name});"
+        columns = execute_raw_sql(columns_query)
+
+        # Each column row contains:
+        # cid (column index), name, type, notnull, dflt_value, pk
+        # Example: {"cid": 0, "name": "id", "type": "INTEGER",
+        #           "notnull": 1, "dflt_value": None, "pk": 1}
+
+        # Build a readable description for this table
+        table_description = f"Table: {table_name}\n"
+
+        for col in columns:
+            col_name = col["name"]
+            col_type = col["type"]
+            required = "required" if col["notnull"] else "optional"
+            is_pk = " (PRIMARY KEY)" if col["pk"] else ""
+
+            table_description += (
+                f"  - {col_name} ({col_type}) "
+                f"{required}{is_pk}\n"
+            )
+
+        schema_parts.append(table_description)
+
+    # Step 3: Add relationship descriptions
+    # SQLAlchemy ForeignKey constraints aren't easily introspected
+    # in SQLite, so we document relationships explicitly
+    # This helps the LLM write correct JOIN queries
+    relationships = """
+Table Relationships:
+  - workmen.site_name → sites.site_name
+  - equipment_inventory.site_name → sites.site_name
+  - materials.site_name → sites.site_name
+  - incidents.site_name → sites.site_name
+
+Key Business Rules:
+  - All monetary values are in USD
+  - utilisation_percent ranges from 0.0 to 100.0
+  - attendance_status values: present, absent, on_leave
+  - Budget utilisation = (spent_budget / total_budget) * 100
+  - Low stock alert when quantity_in_stock < minimum_stock_level
+"""
+
+    # Join all parts with blank lines between tables
+    full_schema = "\n".join(schema_parts) + "\n" + relationships
+
+    return full_schema
